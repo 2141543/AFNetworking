@@ -64,6 +64,7 @@
 - (void)setImageWithURL:(NSURL *)url
        placeholderImage:(UIImage *)placeholderImage
 {
+    //设置head，可接受类型为image
     NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:url];
     [request addValue:@"image/*" forHTTPHeaderField:@"Accept"];
 
@@ -84,10 +85,12 @@
         return;
     }
     
+    //看看设置的当前的回调的request和需要请求的request是不是为同一个，是的话为重复调用，直接返回
     if ([self isActiveTaskURLEqualToURLRequest:urlRequest]) {
         return;
     }
     
+    //开始请求前，先取消之前的task,即解绑回调
     [self cancelImageDownloadTask];
 
     AFImageDownloader *downloader = [[self class] sharedImageDownloader];
@@ -110,6 +113,7 @@
         __weak __typeof(self)weakSelf = self;
         NSUUID *downloadID = [NSUUID UUID];
         AFImageDownloadReceipt *receipt;
+        //去下载，并得到一个receipt，可以用来取消回调
         receipt = [downloader
                    downloadImageForURLRequest:urlRequest
                    withReceiptID:downloadID

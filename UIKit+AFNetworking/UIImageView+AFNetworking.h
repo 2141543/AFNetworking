@@ -29,6 +29,19 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+
+
+/*
+总结一下整个请求图片，缓存，然后设置图片的流程：
+调用- (void)setImageWithURL:(NSURL *)url;时，我们生成
+AFImageDownloader单例，并替我们请求数据。
+而AFImageDownloader会生成一个AFAutoPurgingImageCache替我们缓存生成的数据。当然我们设置的时候，给session的configuration设置了一个系统级别的缓存NSUrlCache,这两者是互相独立工作的，互不影响的。
+然后AFImageDownloader，就实现下载和协调AFAutoPurgingImageCache去缓存，还有一些取消下载的方法。然后通过回调把数据给到我们的类目UIImageView+AFNetworking,如果成功获取数据，则由类目设置上图片，整个流程结束。
+经过这三个文件：
+UIImageView+AFNetworking、AFImageDownloader、AFAutoPurgingImageCache，至此整个设置网络图片的方法结束了。
+*/
+
+
 @class AFImageDownloader;
 
 /**
