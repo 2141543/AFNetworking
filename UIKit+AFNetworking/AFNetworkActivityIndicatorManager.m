@@ -25,10 +25,10 @@
 #import "AFURLSessionManager.h"
 
 typedef NS_ENUM(NSInteger, AFNetworkActivityManagerState) {
-    AFNetworkActivityManagerStateNotActive,
-    AFNetworkActivityManagerStateDelayingStart,
-    AFNetworkActivityManagerStateActive,
-    AFNetworkActivityManagerStateDelayingEnd
+    AFNetworkActivityManagerStateNotActive,//没有请求
+    AFNetworkActivityManagerStateDelayingStart,//请求延迟开始
+    AFNetworkActivityManagerStateActive,//请求进行中
+    AFNetworkActivityManagerStateDelayingEnd//请求延迟结束
 };
 
 static NSTimeInterval const kDefaultAFNetworkActivityManagerActivationDelay = 1.0;
@@ -101,6 +101,7 @@ typedef void (^AFNetworkActivityActionBlock)(BOOL networkActivityIndicatorVisibl
     self.networkActivityActionBlock = block;
 }
 
+//判断是否活跃
 - (BOOL)isNetworkActivityOccurring {
     @synchronized(self) {
         return self.activityCount > 0;
@@ -122,6 +123,7 @@ typedef void (^AFNetworkActivityActionBlock)(BOOL networkActivityIndicatorVisibl
 
 
 - (void)incrementActivityCount {
+    //task的几个状态的通知是会在多线程的环境下发送过来的。所以这里对活跃数的加减，都用了@synchronized这种方式的锁，进行了线程保护。然后回到主线程调用了updateCurrentStateForNetworkActivityChange
     @synchronized(self) {
         self.activityCount++;
     }
@@ -141,17 +143,20 @@ typedef void (^AFNetworkActivityActionBlock)(BOOL networkActivityIndicatorVisibl
 
 - (void)networkRequestDidStart:(NSNotification *)notification {
     if ([AFNetworkRequestFromNotification(notification) URL]) {
+        //增加请求活跃数
         [self incrementActivityCount];
     }
 }
 
 - (void)networkRequestDidFinish:(NSNotification *)notification {
     if ([AFNetworkRequestFromNotification(notification) URL]) {
+        //减少请求活跃数
         [self decrementActivityCount];
     }
 }
 
 #pragma mark - Internal State Management
+//设置当前小菊花状态
 - (void)setCurrentState:(AFNetworkActivityManagerState)currentState {
     @synchronized(self) {
         if (_currentState != currentState) {
@@ -160,6 +165,7 @@ typedef void (^AFNetworkActivityActionBlock)(BOOL networkActivityIndicatorVisibl
                 case AFNetworkActivityManagerStateNotActive:
                     [self cancelActivationDelayTimer];
                     [self cancelCompletionDelayTimer];
+                    //设置小菊花不可见
                     [self setNetworkActivityIndicatorVisible:NO];
                     break;
                 case AFNetworkActivityManagerStateDelayingStart:
@@ -178,10 +184,14 @@ typedef void (^AFNetworkActivityActionBlock)(BOOL networkActivityIndicatorVisibl
 }
 
 - (void)updateCurrentStateForNetworkActivityChange {
+    //如果是允许小菊花
     if (self.enabled) {
         switch (self.currentState) {
+            //不活跃
             case AFNetworkActivityManagerStateNotActive:
+                //判断活跃数，大于0为YES
                 if (self.isNetworkActivityOccurring) {
+                    //设置状态为延迟开始
                     [self setCurrentState:AFNetworkActivityManagerStateDelayingStart];
                 }
                 break;
@@ -202,6 +212,7 @@ typedef void (^AFNetworkActivityActionBlock)(BOOL networkActivityIndicatorVisibl
     }
 }
 
+//开始任务到结束的时间，默认为1秒，如果1秒就结束，那么不转菊花，延迟去开始转
 - (void)startActivationDelayTimer {
     self.activationDelayTimer = [NSTimer
                                  timerWithTimeInterval:self.activationDelay target:self selector:@selector(activationDelayTimerFired) userInfo:nil repeats:NO];
@@ -216,6 +227,7 @@ typedef void (^AFNetworkActivityActionBlock)(BOOL networkActivityIndicatorVisibl
     }
 }
 
+//完成任务到下一个任务开始，默认为0.17秒，如果0.17秒就开始下一个，那么不停  延迟去结束菊花转
 - (void)startCompletionDelayTimer {
     [self.completionDelayTimer invalidate];
     self.completionDelayTimer = [NSTimer timerWithTimeInterval:self.completionDelay target:self selector:@selector(completionDelayTimerFired) userInfo:nil repeats:NO];

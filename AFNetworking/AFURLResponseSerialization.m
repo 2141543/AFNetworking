@@ -106,7 +106,9 @@ id AFJSONObjectByRemovingKeysWithNullValues(id JSONObject, NSJSONReadingOptions 
 }
 
 #pragma mark -
-
+// 判断是不是可接受类型和可接受code，不是则填充error
+//这个方法就是来判断返回数据与咱们使用的解析器是否匹配，需要解析的状态码是否匹配。
+//如果错误，则填充错误信息，并且返回NO，否则返回YES，错误信息为nil。
 - (BOOL)validateResponse:(NSHTTPURLResponse *)response
                     data:(NSData *)data
                    error:(NSError * __autoreleasing *)error
@@ -115,9 +117,13 @@ id AFJSONObjectByRemovingKeysWithNullValues(id JSONObject, NSJSONReadingOptions 
     NSError *validationError = nil;
 
     if ([response isKindOfClass:[NSHTTPURLResponse class]]) {
+        //主要判断自己能接受的数据类型和response的数据类型是否匹配，
+        //如果有接受数据类型，如果不匹配response，而且响应类型不为空，数据长度不为0
         if (self.acceptableContentTypes && ![self.acceptableContentTypes containsObject:[response MIMEType]] &&
             !([response MIMEType] == nil && [data length] == 0)) {
 
+            //进入If块说明解析数据肯定是失败的，这时候要把解析错误信息放到error里。
+            //如果数据长度大于0，而且有响应url
             if ([data length] > 0 && [response URL]) {
                 NSMutableDictionary *mutableUserInfo = [@{
                                                           NSLocalizedDescriptionKey: [NSString stringWithFormat:NSLocalizedStringFromTable(@"Request failed: unacceptable content-type: %@", @"AFNetworking", nil), [response MIMEType]],
@@ -134,6 +140,8 @@ id AFJSONObjectByRemovingKeysWithNullValues(id JSONObject, NSJSONReadingOptions 
             responseIsValid = NO;
         }
 
+        //判断自己可接受的状态吗
+        //如果和response的状态码不匹配，则进入if块
         if (self.acceptableStatusCodes && ![self.acceptableStatusCodes containsIndex:(NSUInteger)response.statusCode] && [response URL]) {
             NSMutableDictionary *mutableUserInfo = [@{
                                                NSLocalizedDescriptionKey: [NSString stringWithFormat:NSLocalizedStringFromTable(@"Request failed: %@ (%ld)", @"AFNetworking", nil), [NSHTTPURLResponse localizedStringForStatusCode:response.statusCode], (long)response.statusCode],

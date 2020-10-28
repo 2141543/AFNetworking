@@ -124,7 +124,7 @@
                       success:(nullable void (^)(NSURLSessionDataTask * _Nonnull, id _Nullable))success
                       failure:(nullable void (^)(NSURLSessionDataTask * _Nullable, NSError * _Nonnull))failure
 {
-    
+    //生成一个task
     NSURLSessionDataTask *dataTask = [self dataTaskWithHTTPMethod:@"GET"
                                                         URLString:URLString
                                                        parameters:parameters
@@ -133,7 +133,7 @@
                                                  downloadProgress:downloadProgress
                                                           success:success
                                                           failure:failure];
-    
+    //开始网络请求
     [dataTask resume];
     
     return dataTask;
@@ -259,13 +259,17 @@
                                          failure:(nullable void (^)(NSURLSessionDataTask * _Nullable task, NSError *error))failure
 {
     NSError *serializationError = nil;
+    //把参数，还有各种东西转化为一个request
     NSMutableURLRequest *request = [self.requestSerializer requestWithMethod:method URLString:[[NSURL URLWithString:URLString relativeToURL:self.baseURL] absoluteString] parameters:parameters error:&serializationError];
     for (NSString *headerField in headers.keyEnumerator) {
         [request setValue:headers[headerField] forHTTPHeaderField:headerField];
     }
     if (serializationError) {
         if (failure) {
+            //三位运算符?:省略的用法
+            //这个是一个GCD的Queue如果设置了那么从这个Queue中回调结果，否则从主队列回调。
             dispatch_async(self.completionQueue ?: dispatch_get_main_queue(), ^{
+                //如果解析错误，直接返回
                 failure(nil, serializationError);
             });
         }

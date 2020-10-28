@@ -175,16 +175,19 @@ static NSArray * AFHTTPRequestSerializerObservedKeyPaths() {
     static NSArray *_AFHTTPRequestSerializerObservedKeyPaths = nil;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
+        // 此处需要observer的keypath为allowsCellularAccess、cachePolicy、HTTPShouldHandleCookies
+        // HTTPShouldUsePipelining、networkServiceType、timeoutInterval
         _AFHTTPRequestSerializerObservedKeyPaths = @[NSStringFromSelector(@selector(allowsCellularAccess)), NSStringFromSelector(@selector(cachePolicy)), NSStringFromSelector(@selector(HTTPShouldHandleCookies)), NSStringFromSelector(@selector(HTTPShouldUsePipelining)), NSStringFromSelector(@selector(networkServiceType)), NSStringFromSelector(@selector(timeoutInterval))];
     });
 
+    //就是一个数组里装了很多方法的名字,
     return _AFHTTPRequestSerializerObservedKeyPaths;
 }
 
 static void *AFHTTPRequestSerializerObserverContext = &AFHTTPRequestSerializerObserverContext;
 
 @interface AFHTTPRequestSerializer ()
-@property (readwrite, nonatomic, strong) NSMutableSet *mutableObservedChangedKeyPaths;
+@property (readwrite, nonatomic, strong) NSMutableSet *mutableObservedChangedKeyPaths;//自己设置的request属性值的集合。
 @property (readwrite, nonatomic, strong) NSMutableDictionary *mutableHTTPRequestHeaders;
 @property (readwrite, nonatomic, strong) dispatch_queue_t requestHeaderModificationQueue;
 @property (readwrite, nonatomic, assign) AFHTTPRequestQueryStringSerializationStyle queryStringSerializationStyle;
@@ -241,7 +244,9 @@ static void *AFHTTPRequestSerializerObserverContext = &AFHTTPRequestSerializerOb
     // HTTP Method Definitions; see http://www.w3.org/Protocols/rfc2616/rfc2616-sec9.html
     self.HTTPMethodsEncodingParametersInURI = [NSSet setWithObjects:@"GET", @"HEAD", @"DELETE", nil];
 
+    //每次都会重置变化
     self.mutableObservedChangedKeyPaths = [NSMutableSet set];
+    //给这自己些方法添加观察者为自己，就是request的各种属性，set方法
     for (NSString *keyPath in AFHTTPRequestSerializerObservedKeyPaths()) {
         if ([self respondsToSelector:NSSelectorFromString(keyPath)]) {
             [self addObserver:self forKeyPath:keyPath options:NSKeyValueObservingOptionNew context:AFHTTPRequestSerializerObserverContext];
@@ -358,9 +363,10 @@ forHTTPHeaderField:(NSString *)field
                                 parameters:(id)parameters
                                      error:(NSError *__autoreleasing *)error
 {
+    //断言，debug模式下，如果缺少该参数，crash
     NSParameterAssert(method);
     NSParameterAssert(URLString);
-
+    
     NSURL *url = [NSURL URLWithString:URLString];
 
     NSParameterAssert(url);
@@ -372,6 +378,7 @@ forHTTPHeaderField:(NSString *)field
         [mutableRequest setValue:[self valueForKeyPath:keyPath] forKey:keyPath];
     }
 
+    //将传入的parameters进行编码，并添加到request中
     mutableRequest = [[self requestBySerializingRequest:mutableRequest withParameters:parameters error:error] mutableCopy];
 
 	return mutableRequest;
@@ -478,12 +485,14 @@ forHTTPHeaderField:(NSString *)field
 
     NSMutableURLRequest *mutableRequest = [request mutableCopy];
 
+    //从自己的head里去遍历，如果有值则设置给request的head
     [self.HTTPRequestHeaders enumerateKeysAndObjectsUsingBlock:^(id field, id value, BOOL * __unused stop) {
         if (![request valueForHTTPHeaderField:field]) {
             [mutableRequest setValue:value forHTTPHeaderField:field];
         }
     }];
 
+    //来把各种类型的参数，array dic set转化成字符串，给request
     NSString *query = nil;
     if (parameters) {
         if (self.queryStringSerialization) {
@@ -506,11 +515,14 @@ forHTTPHeaderField:(NSString *)field
         }
     }
 
+    //最后判断该request中是否包含了GET、HEAD、DELETE（都包含在HTTPMethodsEncodingParametersInURI）。因为这几个method的quey是拼接到url后面的。而POST、PUT是把query拼接到http body中的。
     if ([self.HTTPMethodsEncodingParametersInURI containsObject:[[request HTTPMethod] uppercaseString]]) {
         if (query && query.length > 0) {
             mutableRequest.URL = [NSURL URLWithString:[[mutableRequest.URL absoluteString] stringByAppendingFormat:mutableRequest.URL.query ? @"&%@" : @"?%@", query]];
         }
     } else {
+        //post put请求
+
         // #2864: an empty string is a valid x-www-form-urlencoded payload
         if (!query) {
             query = @"";
@@ -539,6 +551,7 @@ forHTTPHeaderField:(NSString *)field
                         change:(NSDictionary *)change
                        context:(void *)context
 {
+    //当观察到这些set方法被调用了，而且不为Null就会添加到集合里，否则移除
     if (context == AFHTTPRequestSerializerObserverContext) {
         if ([change[NSKeyValueChangeNewKey] isEqual:[NSNull null]]) {
             [self.mutableObservedChangedKeyPaths removeObject:keyPath];
