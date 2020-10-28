@@ -97,6 +97,12 @@
 
 @interface AFImageDownloader ()
 
+/*
+ synchronizationQueue是一个同步线程，用来创建与开始下载任务，也可以理解这个串行线程为这个下载器类的主要代码执行所在的线程
+ （AFImageDownloader类中有大量的操作任务池和修改激活任务数的操作，为了保证数据的安全，这也就是为何AFImageDownloader的主题操作要在其自建的串行线程中执行。）
+ responseQueue是一个并行线程，其用来当请求完成后处理数据。
+ 默认情况下，下载器可以同时下载4张图片，如果图片的请求大于4，多出的请求会被暂时挂起，等待其他请求完成在进行激活。
+ */
 @property (nonatomic, strong) dispatch_queue_t synchronizationQueue;
 @property (nonatomic, strong) dispatch_queue_t responseQueue;
 
@@ -218,9 +224,10 @@
                                                   withReceiptID:(nonnull NSUUID *)receiptID
                                                         success:(nullable void (^)(NSURLRequest *request, NSHTTPURLResponse  * _Nullable response, UIImage *responseObject))success
                                                         failure:(nullable void (^)(NSURLRequest *request, NSHTTPURLResponse * _Nullable response, NSError *error))failure {
-    //这个方法执行的内容都是在我们之前创建的串行queue中，同步的执行的，这是因为这个方法绝大多数的操作都是需要线程安全的。
+    //在串行线程中执行，这是因为这个方法绝大多数的操作都是需要线程安全的。
     __block NSURLSessionDataTask *task = nil;
     dispatch_sync(self.synchronizationQueue, ^{
+        //取当前图片的url作为标识
         NSString *URLIdentifier = request.URL.absoluteString;
         if (URLIdentifier == nil) {
             if (failure) {
@@ -232,12 +239,12 @@
             return;
         }
 
+        //检查任务池中是否已经有此任务
         //如果这个任务已经存在，则添加成功失败Block,然后直接返回，即一个url用一个request,可以响应好几个block
-        //从自己task字典中根据Url去取AFImageDownloaderMergedTask，里面有task id url等等信息
         // 1) Append the success and failure blocks to a pre-existing request if it already exists
         AFImageDownloaderMergedTask *existingMergedTask = self.mergedTasks[URLIdentifier];
         if (existingMergedTask != nil) {
-            //里面包含成功和失败Block和UUid
+            //已经存在此任务 则追加回调 之后返回  这样做的目的是 先后两次对相同图片的请求 可以只进行一次请求，并且执行不同的两次回调
             AFImageDownloaderResponseHandler *handler = [[AFImageDownloaderResponseHandler alloc] initWithUUID:receiptID success:success failure:failure];
             [existingMergedTask addResponseHandler:handler];
             task = existingMergedTask.task;
@@ -318,11 +325,12 @@
                                [strongSelf safelyStartNextTaskIfNecessary];
                            });
                        }];
-
+        //创建处理回调
         // 4) Store the response handler for use when the request completes
         AFImageDownloaderResponseHandler *handler = [[AFImageDownloaderResponseHandler alloc] initWithUUID:receiptID
                                                                                                    success:success
                                                                                                    failure:failure];
+        //创建图片任务 追加回调
         AFImageDownloaderMergedTask *mergedTask = [[AFImageDownloaderMergedTask alloc]
                                                    initWithURLIdentifier:URLIdentifier
                                                    identifier:mergedTaskIdentifier
@@ -330,6 +338,7 @@
         [mergedTask addResponseHandler:handler];
         self.mergedTasks[URLIdentifier] = mergedTask;
 
+        //进行激活或挂起数据请求任务
         // 5) Either start the request or enqueue it depending on the current active request count
         if ([self isActiveRequestCountBelowMaximumLimit]) {
             [self startMergedTask:mergedTask];
@@ -341,6 +350,7 @@
         task = mergedTask.task;
     });
     if (task) {
+        //将回执返回 用来取消任务
         return [[AFImageDownloadReceipt alloc] initWithReceiptID:receiptID task:task];
     } else {
         return nil;

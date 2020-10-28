@@ -86,7 +86,7 @@ typedef void (^AFURLSessionTaskProgressBlock)(NSProgress *);
 typedef void (^AFURLSessionTaskCompletionHandler)(NSURLResponse *response, id responseObject, NSError *error);
 
 #pragma mark -
-
+//注意：AFURLSessionManagerTaskDelegate是一个类，并不是协议
 @interface AFURLSessionManagerTaskDelegate : NSObject <NSURLSessionTaskDelegate, NSURLSessionDataDelegate, NSURLSessionDownloadDelegate>
 - (instancetype)initWithTask:(NSURLSessionTask *)task;
 @property (nonatomic, weak) AFURLSessionManager *manager;
@@ -170,7 +170,7 @@ static const void * const AuthenticationChallengeErrorKey = &AuthenticationChall
 
 //AF实现的代理！被从urlsession那转发到这
 #pragma mark - NSURLSessionTaskDelegate
-
+//请求完成后
 - (void)URLSession:(__unused NSURLSession *)session
               task:(NSURLSessionTask *)task
 didCompleteWithError:(NSError *)error
@@ -181,7 +181,7 @@ didCompleteWithError:(NSError *)error
 
     __block id responseObject = nil;
 
-    //用来存储一些相关信息，来发送通知用的
+    //配置一个信息字典，来发送通知用的
     NSMutableDictionary *userInfo = [NSMutableDictionary dictionary];
     //存储responseSerializer响应解析对象
     userInfo[AFNetworkingTaskDidCompleteResponseSerializerKey] = manager.responseSerializer;
@@ -201,13 +201,14 @@ didCompleteWithError:(NSError *)error
         }
     }
 #endif
-
+    //下载信息配置
     if (self.downloadFileURL) {
         userInfo[AFNetworkingTaskDidCompleteAssetPathKey] = self.downloadFileURL;
     } else if (data) {
         userInfo[AFNetworkingTaskDidCompleteResponseDataKey] = data;
     }
 
+    //错误信息配置
     if (error) {
         userInfo[AFNetworkingTaskDidCompleteErrorKey] = error;
 
@@ -226,7 +227,7 @@ didCompleteWithError:(NSError *)error
         //注意AF的优化的点，虽然代理回调是串行的。但是数据解析这种费时操作，确是用并行线程来做的。
         dispatch_async(url_session_manager_processing_queue(), ^{
             NSError *serializationError = nil;
-            //解析数据
+            //用回执数据序列化类进行数据处理
             responseObject = [manager.responseSerializer responseObjectForResponse:task.response data:data error:&serializationError];
 
             //如果是下载文件，那么responseObject为下载的路径
@@ -265,7 +266,7 @@ didFinishCollectingMetrics:(NSURLSessionTaskMetrics *)metrics AF_API_AVAILABLE(i
 #endif
 
 #pragma mark - NSURLSessionDataDelegate
-
+//接收到数据后 将数据进行拼接
 - (void)URLSession:(__unused NSURLSession *)session
           dataTask:(__unused NSURLSessionDataTask *)dataTask
     didReceiveData:(NSData *)data
@@ -304,6 +305,7 @@ expectedTotalBytes:(int64_t)expectedTotalBytes{
     self.downloadProgress.completedUnitCount = fileOffset;
 }
 
+//下载处理
 - (void)URLSession:(NSURLSession *)session
       downloadTask:(NSURLSessionDownloadTask *)downloadTask
 didFinishDownloadingToURL:(NSURL *)location
@@ -515,7 +517,7 @@ static NSString * const AFNSURLSessionTaskDidSuspendNotification = @"com.alamofi
     self.reachabilityManager = [AFNetworkReachabilityManager sharedManager];
 #endif
 
-    // 设置存储NSURL task与AFURLSessionManagerTaskDelegate的词典（重点，在AFNet中，每一个task都会被匹配一个AFURLSessionManagerTaskDelegate 来做task的delegate事件处理） ===============
+    // 设置存储NSURL task与AFURLSessionManagerTaskDelegate的词典（重点，在AFNet中，每一个task都会被匹配一个AFURLSessionManagerTaskDelegate 来做task的delegate事件处理，即每一个请求任务都对应有一个delegate 存在这里面===============
     // 用来让每一个请求task和我们自定义的AF代理来建立映射用的，其实AF对task的代理进行了一个封装，并且转发代理到AF自定义的代理
     self.mutableTaskDelegatesKeyedByTaskIdentifier = [[NSMutableDictionary alloc] init];
 
@@ -523,6 +525,7 @@ static NSString * const AFNSURLSessionTaskDidSuspendNotification = @"com.alamofi
     self.lock = [[NSLock alloc] init];
     self.lock.name = AFURLSessionManagerLockName;
 
+      //置空task关联的代理
     //getTasksWithCompletionHandler:这个方法用来异步的获取当前session的所有未完成的task
     //为了防止后台回来，重新初始化这个session，一些之前的后台请求任务，导致程序的crash。
     [self.session getTasksWithCompletionHandler:^(NSArray *dataTasks, NSArray *uploadTasks, NSArray *downloadTasks) {
@@ -610,6 +613,7 @@ static NSString * const AFNSURLSessionTaskDidSuspendNotification = @"com.alamofi
     //而要加锁的原因是因为本身我们这个字典属性是mutable的，是线程不安全的。而我们对这些方法的调用，确实是会在复杂的多线程环境中
     [self.lock lock];
     // 将AF delegate放入以taskIdentifier标记的词典中（同一个NSURLSession中的taskIdentifier是唯一的）
+    //taskIdentifier是我们后面来映射delegate的key,所以它必须是唯一的
     self.mutableTaskDelegatesKeyedByTaskIdentifier[@(task.taskIdentifier)] = delegate;
     //添加task开始和暂停的通知
     [self addNotificationObserverForTask:task];
@@ -621,6 +625,7 @@ static NSString * const AFNSURLSessionTaskDidSuspendNotification = @"com.alamofi
               downloadProgress:(nullable void (^)(NSProgress *downloadProgress)) downloadProgressBlock
              completionHandler:(void (^)(NSURLResponse *response, id responseObject, NSError *error))completionHandler
 {
+    //AF的自定义代理
     AFURLSessionManagerTaskDelegate *delegate = [[AFURLSessionManagerTaskDelegate alloc] initWithTask:dataTask];
     // AFURLSessionManagerTaskDelegate与AFURLSessionManager建立相互关系
     delegate.manager = self;
@@ -756,14 +761,15 @@ static NSString * const AFNSURLSessionTaskDidSuspendNotification = @"com.alamofi
 }
 
 #pragma mark -
-
+//用AFURLSesstionManager创建请求任务有三类，对应NSURLSesstion中的数据请求任务，上传任务和下载任务。
 - (NSURLSessionDataTask *)dataTaskWithRequest:(NSURLRequest *)request
                                uploadProgress:(nullable void (^)(NSProgress *uploadProgress)) uploadProgressBlock
                              downloadProgress:(nullable void (^)(NSProgress *downloadProgress)) downloadProgressBlock
                             completionHandler:(nullable void (^)(NSURLResponse *response, id _Nullable responseObject,  NSError * _Nullable error))completionHandler {
-
+    //创建任务
     NSURLSessionDataTask *dataTask = [self.session dataTaskWithRequest:request];
 
+    //进行代理设置
     [self addDelegateForDataTask:dataTask uploadProgress:uploadProgressBlock downloadProgress:downloadProgressBlock completionHandler:completionHandler];
 
     return dataTask;
@@ -1005,6 +1011,12 @@ willPerformHTTPRedirection:(NSHTTPURLResponse *)response
 didReceiveChallenge:(NSURLAuthenticationChallenge *)challenge
  completionHandler:(void (^)(NSURLSessionAuthChallengeDisposition disposition, NSURLCredential *credential))completionHandler
 {
+    //挑战处理类型为 默认
+       /*
+        NSURLSessionAuthChallengePerformDefaultHandling：默认方式处理
+        NSURLSessionAuthChallengeUseCredential：使用指定的证书
+        NSURLSessionAuthChallengeCancelAuthenticationChallenge：取消挑战
+        */
     BOOL evaluateServerTrust = NO;
     NSURLSessionAuthChallengeDisposition disposition = NSURLSessionAuthChallengePerformDefaultHandling;
     NSURLCredential *credential = nil;
@@ -1072,6 +1084,7 @@ didReceiveChallenge:(NSURLAuthenticationChallenge *)challenge
     return [NSError errorWithDomain:NSURLErrorDomain code:NSURLErrorServerCertificateUntrusted userInfo:userInfo];
 }
 
+//需要提供数据流传向服务器时调用
 - (void)URLSession:(NSURLSession *)session
               task:(NSURLSessionTask *)task
  needNewBodyStream:(void (^)(NSInputStream *bodyStream))completionHandler
@@ -1089,6 +1102,7 @@ didReceiveChallenge:(NSURLAuthenticationChallenge *)challenge
     }
 }
 
+//已经发送数据后调用
 - (void)URLSession:(NSURLSession *)session
               task:(NSURLSessionTask *)task
    didSendBodyData:(int64_t)bytesSent
@@ -1124,7 +1138,7 @@ totalBytesExpectedToSend:(int64_t)totalBytesExpectedToSend
               task:(NSURLSessionTask *)task
 didCompleteWithError:(NSError *)error
 {
-    //根据task去取我们一开始创建绑定的delegate
+    //根据task去取我们一开始创建绑定的delegate，交给它处理
     AFURLSessionManagerTaskDelegate *delegate = [self delegateForTask:task];
 
     // delegate may be nil when completing a task in the background
@@ -1174,11 +1188,12 @@ didReceiveResponse:(NSURLResponse *)response
     }
 }
 
-//NSURLSessionResponseBecomeDownload
+//此请求将要变更成下载任务时回调
 - (void)URLSession:(NSURLSession *)session
           dataTask:(NSURLSessionDataTask *)dataTask
 didBecomeDownloadTask:(NSURLSessionDownloadTask *)downloadTask
 {
+    //重新设置内部代理
     AFURLSessionManagerTaskDelegate *delegate = [self delegateForTask:dataTask];
     if (delegate) {
         [self removeDelegateForTask:dataTask];
@@ -1195,7 +1210,7 @@ didBecomeDownloadTask:(NSURLSessionDownloadTask *)downloadTask
           dataTask:(NSURLSessionDataTask *)dataTask
     didReceiveData:(NSData *)data
 {
-
+    //交给内部代理处理
     AFURLSessionManagerTaskDelegate *delegate = [self delegateForTask:dataTask];
     [delegate URLSession:session dataTask:dataTask didReceiveData:data];
 
@@ -1204,7 +1219,7 @@ didBecomeDownloadTask:(NSURLSessionDownloadTask *)downloadTask
     }
 }
 
-//当task接收到所有期望的数据后，session会调用此代理方法。
+//将要缓存回执数据时调用
 - (void)URLSession:(NSURLSession *)session
           dataTask:(NSURLSessionDataTask *)dataTask
  willCacheResponse:(NSCachedURLResponse *)proposedResponse

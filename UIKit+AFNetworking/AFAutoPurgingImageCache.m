@@ -27,10 +27,10 @@
 
 @interface AFCachedImage : NSObject
 
-@property (nonatomic, strong) UIImage *image;
+@property (nonatomic, strong) UIImage *image;//关联的UIImage
 @property (nonatomic, copy) NSString *identifier;//url标识
-@property (nonatomic, assign) UInt64 totalBytes;//总大小
-@property (nonatomic, strong) NSDate *lastAccessDate;//上次获取时间
+@property (nonatomic, assign) UInt64 totalBytes;//图片大小
+@property (nonatomic, strong) NSDate *lastAccessDate;//最后使用时间
 @property (nonatomic, assign) UInt64 currentMemoryUsage;
 
 @end

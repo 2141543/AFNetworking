@@ -70,6 +70,11 @@ FOUNDATION_EXPORT NSString * AFQueryStringFromParameters(NSDictionary *parameter
  @param error The error that occurred while attempting to encode the request parameters.
 
  @return A serialized request.
+ //将请求和参数进行配置后返回
+ 默认会向请求头中添加Accept-Language，User-Agent以及其他可配置的头部信息(缓存，Cookie，超时时间，用户名密码等)。
+ 在进行请求参数配置的时候，AFHTTPRequestSerizlizaer会根据请求方法来选择配置到url后面或者添加到请求body中(HEAD，DELETE，GET会追加URL，其他添加body)。
+ AFJSONRequestSerizlizaer的作用与AFHTTPRequestSerizlizaer一致，不同的是会将请求头中的Content-Type设置为application/json并且将参数格式化成JSON数据放置在请求体中
+ AFPropertyListRequestSerializer类则是将Content-Type设置为application/x-plist，并且将参数格式化成Plist数据放入请求体。
  */
 - (nullable NSURLRequest *)requestBySerializingRequest:(NSURLRequest *)request
                                withParameters:(nullable id)parameters

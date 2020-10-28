@@ -25,15 +25,17 @@
 #import <SystemConfiguration/SystemConfiguration.h>
 
 typedef NS_ENUM(NSInteger, AFNetworkReachabilityStatus) {
-    AFNetworkReachabilityStatusUnknown          = -1,
-    AFNetworkReachabilityStatusNotReachable     = 0,
-    AFNetworkReachabilityStatusReachableViaWWAN = 1,
-    AFNetworkReachabilityStatusReachableViaWiFi = 2,
+    AFNetworkReachabilityStatusUnknown          = -1,//未知状态
+    AFNetworkReachabilityStatusNotReachable     = 0,//未连接
+    AFNetworkReachabilityStatusReachableViaWWAN = 1,//蜂窝移动网络
+    AFNetworkReachabilityStatusReachableViaWiFi = 2,//WiFi网络
 };
 
 NS_ASSUME_NONNULL_BEGIN
 
 /**
+  AFNetworkReachabilityManager对象用于监听设备当前连接网络的状态。
+
  `AFNetworkReachabilityManager` monitors the reachability of domains, and addresses for both WWAN and WiFi network interfaces.
 
  Reachability can be used to determine background information about why a network operation failed, or to trigger a network operation retrying when a connection is established. It should not be used to prevent a user from initiating a network request, as it's possible that an initial request may be required to establish reachability.
@@ -51,16 +53,19 @@ NS_ASSUME_NONNULL_BEGIN
 
 /**
  Whether or not the network is currently reachable.
+ //获取当前网络是否连接
  */
 @property (readonly, nonatomic, assign, getter = isReachable) BOOL reachable;
 
 /**
  Whether or not the network is currently reachable via WWAN.
+ //获取当前是否是移动网络
  */
 @property (readonly, nonatomic, assign, getter = isReachableViaWWAN) BOOL reachableViaWWAN;
 
 /**
  Whether or not the network is currently reachable via WiFi.
+ //获取当前是否是WIFI网络
  */
 @property (readonly, nonatomic, assign, getter = isReachableViaWiFi) BOOL reachableViaWiFi;
 
@@ -123,11 +128,13 @@ NS_ASSUME_NONNULL_BEGIN
 
 /**
  Starts monitoring for changes in network reachability status.
+ //开启网络状态监听 当网络状态变化时会有回调
  */
 - (void)startMonitoring;
 
 /**
  Stops monitoring for changes in network reachability status.
+ //停止进行网络状态监听
  */
 - (void)stopMonitoring;
 
@@ -136,6 +143,8 @@ NS_ASSUME_NONNULL_BEGIN
 ///-------------------------------------------------
 
 /**
+ //格式化的网络状态字符串
+
  Returns a localized string representation of the current network reachability status.
  */
 - (NSString *)localizedNetworkReachabilityStatusString;
@@ -145,6 +154,8 @@ NS_ASSUME_NONNULL_BEGIN
 ///---------------------------------------------------
 
 /**
+ //设置网络状态发生变化后的回调
+
  Sets a callback to be executed when the network availability of the `baseURL` host changes.
 
  @param block A block object to be executed when the network availability of the `baseURL` host changes.. This block has no return value and takes a single argument which represents the various reachability states from the device to the `baseURL`.
@@ -200,6 +211,7 @@ NS_ASSUME_NONNULL_BEGIN
 
  @warning In order for network reachability to be monitored, include the `SystemConfiguration` framework in the active target's "Link Binary With Library" build phase, and add `#import <SystemConfiguration/SystemConfiguration.h>` to the header prefix of the project (`Prefix.pch`).
  */
+//如果开启了网络状态监听 则网络状态发生变化时也会 发这个通知
 FOUNDATION_EXPORT NSString * const AFNetworkingReachabilityDidChangeNotification;
 FOUNDATION_EXPORT NSString * const AFNetworkingReachabilityNotificationStatusItem;
 

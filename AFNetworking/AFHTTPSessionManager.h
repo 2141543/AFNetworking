@@ -69,6 +69,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 /**
  The URL used to construct requests from relative paths in methods like `requestWithMethod:URLString:parameters:`, and the `GET` / `POST` / et al. convenience methods.
+ //基础URL
  */
 @property (readonly, nonatomic, strong, nullable) NSURL *baseURL;
 
@@ -76,6 +77,7 @@ NS_ASSUME_NONNULL_BEGIN
  Requests created with `requestWithMethod:URLString:parameters:` & `multipartFormRequestWithMethod:URLString:parameters:constructingBodyWithBlock:` are constructed with a set of default headers using a parameter serialization specified by this property. By default, this is set to an instance of `AFHTTPRequestSerializer`, which serializes query string parameters for `GET`, `HEAD`, and `DELETE` requests, or otherwise URL-form-encodes HTTP message bodies.
 
  @warning `requestSerializer` must not be `nil`.
+ //请求序列化对象
  */
 @property (nonatomic, strong) AFHTTPRequestSerializer <AFURLRequestSerialization> * requestSerializer;
 
@@ -83,6 +85,7 @@ NS_ASSUME_NONNULL_BEGIN
  Responses sent from the server in data tasks created with `dataTaskWithRequest:success:failure:` and run using the `GET` / `POST` / et al. convenience methods are automatically validated and serialized by the response serializer. By default, this property is set to an instance of `AFJSONResponseSerializer`.
 
  @warning `responseSerializer` must not be `nil`.
+ //回执序列化对象
  */
 @property (nonatomic, strong) AFHTTPResponseSerializer <AFURLResponseSerialization> * responseSerializer;
 
@@ -101,6 +104,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 /**
  Creates and returns an `AFHTTPSessionManager` object.
+ //创建一个默认的Manager实例  注意不是单例
  */
 + (instancetype)manager;
 
@@ -131,6 +135,8 @@ NS_ASSUME_NONNULL_BEGIN
 ///---------------------------
 
 /**
+ GET 请求是向服务端发起请求数据,用来获取或查询资源信息
+ 
  Creates and runs an `NSURLSessionDataTask` with a `GET` request.
  
  @param URLString The URL string used to create the request URL.
@@ -167,6 +173,8 @@ NS_ASSUME_NONNULL_BEGIN
                                 failure:(nullable void (^)(NSURLSessionDataTask * _Nullable task, NSError *error))failure;
 
 /**
+ POST 请求是向服务端发送数据的,用来更新资源信息,它可以改变数据的种类等资源
+
  Creates and runs an `NSURLSessionDataTask` with a `POST` request.
  
  @param URLString The URL string used to create the request URL.
@@ -207,6 +215,8 @@ NS_ASSUME_NONNULL_BEGIN
                                 failure:(nullable void (^)(NSURLSessionDataTask * _Nullable task, NSError *error))failure;
 
 /**
+ PUT 请求和POST请求很像,都是发送数据的,但是PUT请求不能改变数据的种类等资源,它只能修改内容
+
  Creates and runs an `NSURLSessionDataTask` with a `PUT` request.
  
  @param URLString The URL string used to create the request URL.
@@ -224,6 +234,8 @@ NS_ASSUME_NONNULL_BEGIN
                                failure:(nullable void (^)(NSURLSessionDataTask * _Nullable task, NSError *error))failure;
 
 /**
+ PATCH 请求和PUT请求一样,也是用来进行数据更新的,它是HTTP verb推荐用于更新的
+
  Creates and runs an `NSURLSessionDataTask` with a `PATCH` request.
  
  @param URLString The URL string used to create the request URL.
@@ -241,6 +253,8 @@ NS_ASSUME_NONNULL_BEGIN
                                  failure:(nullable void (^)(NSURLSessionDataTask * _Nullable task, NSError *error))failure;
 
 /**
+ DELETE 请求就是用来删除某个资源的
+
  Creates and runs an `NSURLSessionDataTask` with a `DELETE` request.
  
  @param URLString The URL string used to create the request URL.

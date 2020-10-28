@@ -116,8 +116,30 @@ NSString * AFPercentEscapedStringFromString(NSString *string) {
 FOUNDATION_EXPORT NSArray * AFQueryStringPairsFromDictionary(NSDictionary *dictionary);
 FOUNDATION_EXPORT NSArray * AFQueryStringPairsFromKeyAndValue(NSString *key, id value);
 
+/*
+ @{
+  @"name" : @"bang",
+  @"phone": @{@"mobile": @"xx", @"home": @"xx"},
+  @"families": @[@"father", @"mother"],
+  @"nums": [NSSet setWithObjects:@"1", @"2", nil]
+ }
+ ->
+ @[
+  field: @"name", value: @"bang",
+  field: @"phone[mobile]", value: @"xx",
+  field: @"phone[home]", value: @"xx",
+  field: @"families[]", value: @"father",
+  field: @"families[]", value: @"mother",
+  field: @"nums", value: @"1",
+  field: @"nums", value: @"2",
+ ]
+ ->
+ name=bang&phone[mobile]=xx&phone[home]=xx&families[]=father&families[]=mother&nums=1&num=2
+ 
+ */
 NSString * AFQueryStringFromParameters(NSDictionary *parameters) {
     NSMutableArray *mutablePairs = [NSMutableArray array];
+    //把参数给AFQueryStringPairsFromDictionary，拿到AF的一个类型的数据就一个key，value对象，在URLEncodedStringValue拼接keyValue，一个加到数组里
     for (AFQueryStringPair *pair in AFQueryStringPairsFromDictionary(parameters)) {
         [mutablePairs addObject:[pair URLEncodedStringValue]];
     }
@@ -132,6 +154,9 @@ NSArray * AFQueryStringPairsFromDictionary(NSDictionary *dictionary) {
 NSArray * AFQueryStringPairsFromKeyAndValue(NSString *key, id value) {
     NSMutableArray *mutableQueryStringComponents = [NSMutableArray array];
 
+    // 根据需要排列的对象的description来进行升序排列，并且selector使用的是compare:
+     // 因为对象的description返回的是NSString，所以此处compare:使用的是NSString的compare函数
+     // 即@[@"foo", @"bar", @"bae"] ----> @[@"bae", @"bar",@"foo"]
     NSSortDescriptor *sortDescriptor = [NSSortDescriptor sortDescriptorWithKey:@"description" ascending:YES selector:@selector(compare:)];
 
     if ([value isKindOfClass:[NSDictionary class]]) {
@@ -372,8 +397,10 @@ forHTTPHeaderField:(NSString *)field
     NSParameterAssert(url);
 
     NSMutableURLRequest *mutableRequest = [[NSMutableURLRequest alloc] initWithURL:url];
+//    设置request的请求类型，如get、post、put等
     mutableRequest.HTTPMethod = method;
 
+      //将request的各种属性循环遍历
     for (NSString *keyPath in self.mutableObservedChangedKeyPaths) {
         [mutableRequest setValue:[self valueForKeyPath:keyPath] forKey:keyPath];
     }
@@ -509,13 +536,15 @@ forHTTPHeaderField:(NSString *)field
         } else {
             switch (self.queryStringSerializationStyle) {
                 case AFHTTPRequestQueryStringDefaultStyle:
+                    //把原来的容器类型的参数转成字符串类型
                     query = AFQueryStringFromParameters(parameters);
                     break;
             }
         }
     }
 
-    //最后判断该request中是否包含了GET、HEAD、DELETE（都包含在HTTPMethodsEncodingParametersInURI）。因为这几个method的quey是拼接到url后面的。而POST、PUT是把query拼接到http body中的。
+    //根据该request中请求类型，来判断参数字符串应该如何设置到request中去。
+//    如果是GET、HEAD、DELETE，则把参数quey是拼接到url后面的。而POST、PUT是把query拼接到http body中
     if ([self.HTTPMethodsEncodingParametersInURI containsObject:[[request HTTPMethod] uppercaseString]]) {
         if (query && query.length > 0) {
             mutableRequest.URL = [NSURL URLWithString:[[mutableRequest.URL absoluteString] stringByAppendingFormat:mutableRequest.URL.query ? @"&%@" : @"?%@", query]];
@@ -530,6 +559,7 @@ forHTTPHeaderField:(NSString *)field
         if (![mutableRequest valueForHTTPHeaderField:@"Content-Type"]) {
             [mutableRequest setValue:@"application/x-www-form-urlencoded" forHTTPHeaderField:@"Content-Type"];
         }
+        //设置请求体
         [mutableRequest setHTTPBody:[query dataUsingEncoding:self.stringEncoding]];
     }
 

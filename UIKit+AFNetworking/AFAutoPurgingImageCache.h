@@ -28,11 +28,15 @@
 NS_ASSUME_NONNULL_BEGIN
 
 /**
+ //图片缓存协议
+
  The `AFImageCache` protocol defines a set of APIs for adding, removing and fetching images from a cache synchronously.
  */
 @protocol AFImageCache <NSObject>
 
 /**
+ //根据id来缓存图片
+
  Adds the image to the cache with the given identifier.
 
  @param image The image to cache.
@@ -41,6 +45,8 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)addImage:(UIImage *)image withIdentifier:(NSString *)identifier;
 
 /**
+ //根据id来删除图片
+
  Removes the image from the cache matching the given identifier.
 
  @param identifier The unique identifier for the image in the cache.
@@ -57,6 +63,8 @@ NS_ASSUME_NONNULL_BEGIN
 - (BOOL)removeAllImages;
 
 /**
+ //根据id来取缓存
+
  Returns the image in the cache associated with the given identifier.
 
  @param identifier The unique identifier for the image in the cache.
@@ -68,6 +76,8 @@ NS_ASSUME_NONNULL_BEGIN
 
 
 /**
+ //网络图片缓存协议
+
  The `ImageRequestCache` protocol extends the `ImageCache` protocol by adding methods for adding, removing and fetching images from a cache given an `NSURLRequest` and additional identifier.
  */
 @protocol AFImageRequestCache <AFImageCache>
@@ -84,6 +94,8 @@ NS_ASSUME_NONNULL_BEGIN
 - (BOOL)shouldCacheImage:(UIImage *)image forRequest:(NSURLRequest *)request withAdditionalIdentifier:(nullable NSString *)identifier;
 
 /**
+ //缓存某个url的图片 用url+id的方式
+
  Adds the image to the cache using an identifier created from the request and additional identifier.
 
  @param image The image to cache.
@@ -93,6 +105,8 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)addImage:(UIImage *)image forRequest:(NSURLRequest *)request withAdditionalIdentifier:(nullable NSString *)identifier;
 
 /**
+ //移除某个缓存图片
+
  Removes the image from the cache using an identifier created from the request and additional identifier.
 
  @param request The unique URL request identifing the image asset.
@@ -103,6 +117,8 @@ NS_ASSUME_NONNULL_BEGIN
 - (BOOL)removeImageforRequest:(NSURLRequest *)request withAdditionalIdentifier:(nullable NSString *)identifier;
 
 /**
+ //获取缓存
+
  Returns the image from the cache associated with an identifier created from the request and additional identifier.
 
  @param request The unique URL request identifing the image asset.
@@ -115,21 +131,35 @@ NS_ASSUME_NONNULL_BEGIN
 @end
 
 /**
+ 图片缓存器类
+ AFAutoPurgingImageCache类是AF框架中提供的图片缓存器，需要注意，它并不是一个持久化的缓存工具，只做临时性的缓存。
+ 用于缓存图片的类，通过identifier来添加和搜索UIImage。
+ 
+ 每一个AFAutoPurgingImageCache类实例中都有一个缓存池，缓存池有两个临界值，最大容量与期望容量。当实际使用的内存超过最大容量时，缓存池会自动清理到期望容量。在缓存池中，存放的实际上是AFCacheImage对象，这个内部类对UIImage进行了包装
+ 
+ 清缓存的逻辑流程是每次进行图片缓存时，判断是否超出缓存池最大容量，如果超出，将AFCacheImage对象按照lastAccessDate属性进行排序后进行按顺序删除直到到达期望容量。当收到系统的内存警告时，也会唤起清除内存操作。
+
  The `AutoPurgingImageCache` in an in-memory image cache used to store images up to a given memory capacity. When the memory capacity is reached, the image cache is sorted by last access date, then the oldest image is continuously purged until the preferred memory usage after purge is met. Each time an image is accessed through the cache, the internal access date of the image is updated.
  */
 @interface AFAutoPurgingImageCache : NSObject <AFImageRequestCache>
 
 /**
+ //缓存空间大小 默认为100M
+ 
  The total memory capacity of the cache in bytes.
  */
 @property (nonatomic, assign) UInt64 memoryCapacity;
 
 /**
+ //当缓存超过最大限制时进行清缓存 清缓存后的缓存底线大小设置 默认60M
+
  The preferred memory usage after purge in bytes. During a purge, images will be purged until the memory capacity drops below this limit.
  */
 @property (nonatomic, assign) UInt64 preferredMemoryUsageAfterPurge;
 
 /**
+ //已用空间大小
+
  The current total memory usage in bytes of all images stored within the cache.
  */
 @property (nonatomic, assign, readonly) UInt64 memoryUsage;

@@ -92,11 +92,13 @@ NS_ASSUME_NONNULL_BEGIN
 
 /**
  The managed session.
+ 会话
  */
 @property (readonly, nonatomic, strong) NSURLSession *session;
 
 /**
  The operation queue on which delegate callbacks are run.
+ 用于执行代理回调方法的队列
  */
 @property (readonly, nonatomic, strong) NSOperationQueue *operationQueue;
 
@@ -104,6 +106,7 @@ NS_ASSUME_NONNULL_BEGIN
  Responses sent from the server in data tasks created with `dataTaskWithRequest:success:failure:` and run using the `GET` / `POST` / et al. convenience methods are automatically validated and serialized by the response serializer. By default, this property is set to an instance of `AFJSONResponseSerializer`.
 
  @warning `responseSerializer` must not be `nil`.
+ 返回数据的解析器
  */
 @property (nonatomic, strong) id <AFURLResponseSerialization> responseSerializer;
 
@@ -113,6 +116,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 /**
  The security policy used by created session to evaluate server trust for secure connections. `AFURLSessionManager` uses the `defaultPolicy` unless otherwise specified.
+ 安全策略
  */
 @property (nonatomic, strong) AFSecurityPolicy *securityPolicy;
 
@@ -123,6 +127,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 /**
  The network reachability manager. `AFURLSessionManager` uses the `sharedManager` by default.
+ 网络状态管理器
  */
 @property (readwrite, nonatomic, strong) AFNetworkReachabilityManager *reachabilityManager;
 #endif
@@ -133,21 +138,25 @@ NS_ASSUME_NONNULL_BEGIN
 
 /**
  The data, upload, and download tasks currently run by the managed session.
+ 当前会话所关联的所有任务，包含请求、下载、上传任务
  */
 @property (readonly, nonatomic, strong) NSArray <NSURLSessionTask *> *tasks;
 
 /**
  The data tasks currently run by the managed session.
+ 当前会话所关联的数据请求任务
  */
 @property (readonly, nonatomic, strong) NSArray <NSURLSessionDataTask *> *dataTasks;
 
 /**
  The upload tasks currently run by the managed session.
+ 当前会话所关联的上传任务
  */
 @property (readonly, nonatomic, strong) NSArray <NSURLSessionUploadTask *> *uploadTasks;
 
 /**
  The download tasks currently run by the managed session.
+ 当前会话所关联的下载任务
  */
 @property (readonly, nonatomic, strong) NSArray <NSURLSessionDownloadTask *> *downloadTasks;
 
@@ -157,11 +166,13 @@ NS_ASSUME_NONNULL_BEGIN
 
 /**
  The dispatch queue for `completionBlock`. If `NULL` (default), the main queue is used.
+ 指定completionBlock执行时的队列，默认NULL，使用主队列
  */
 @property (nonatomic, strong, nullable) dispatch_queue_t completionQueue;
 
 /**
  The dispatch group for `completionBlock`. If `NULL` (default), a private dispatch group is used.
+ 指定completionBlock相关联的组，默认NULL，将创建一个私有的组
  */
 @property (nonatomic, strong, nullable) dispatch_group_t completionGroup;
 

@@ -33,6 +33,15 @@ FOUNDATION_EXPORT id AFJSONObjectByRemovingKeysWithNullValues(id JSONObject, NSJ
  The `AFURLResponseSerialization` protocol is adopted by an object that decodes data into a more useful object representation, according to details in the server response. Response serializers may additionally perform validation on the incoming response and data.
 
  For example, a JSON response serializer may check for an acceptable status code (`2XX` range) and content type (`application/json`), decoding a valid JSON response into an object.
+ 
+ AFNetworking进行网络请求有一个十分方便的地方在于它可以直接将返回数据进行解析。
+ 其中AFHTTPResponseSerializer是最基础的解析类，它只会根据返回头信息来校验返回数据的有效性，整理后直接将原数据返回。
+ AFJSONResponseSerializer类用来解析返回数据为JSON数据的回执，用这个类进行解析时，返回头信息中的MIMEType必须为application/json，text/json或text/javascript。
+ AFXMLParserResponseSerializer类用来解析XML数据，其会返回一个XML解析器，使用它时，返回头信息中的MIMEType必须为application/xml或text/xml。
+ AFXMLDocumentResponseSerializer类将返回数据解析成XML文档。
+ AFPropertyListResponseSerializer用来将返回数据解析成Plist数据。
+ AFImageResponseSerializer类用来将返回数据解析成UIImage图片，其支持的MIMEType类型为image/tiff，image/jpeg，image/gif，image/png，image/ico，image/x-icon，image/bmp，image/x-bmp，image/x-xbitmap，image/x-win-bitmap。
+ AFCompoundResponseSerializer类，这个类示例中可以配置多个ResponseSerializer实例，解析的时候会进行遍历尝试找到可以解析的模式，这种模式也叫混合解析模式。
  */
 @protocol AFURLResponseSerialization <NSObject, NSSecureCoding, NSCopying>
 

@@ -37,6 +37,8 @@
 ///----------------------------------
 
 /**
+ 将一个请求任务绑定到活动指示器上，任务的完成与否来决定控件是否展示动画。
+ 
  Binds the animating state to the state of the specified task.
 
  @param task The task. If `nil`, automatic updating from any previously specified operation will be disabled.

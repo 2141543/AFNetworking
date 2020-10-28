@@ -85,7 +85,7 @@
         return;
     }
     
-    //看看设置的当前的回调的request和需要请求的request是不是为同一个，是的话为重复调用，直接返回
+    //看看当前request和正在进行的请求的request是不是为同一个，是的话为重复调用，直接返回
     if ([self isActiveTaskURLEqualToURLRequest:urlRequest]) {
         return;
     }
@@ -93,9 +93,12 @@
     //开始请求前，先取消之前的task,即解绑回调
     [self cancelImageDownloadTask];
 
+    //拿到图片下载器
     AFImageDownloader *downloader = [[self class] sharedImageDownloader];
+    //拿到缓存器
     id <AFImageRequestCache> imageCache = downloader.imageCache;
 
+    //检查缓存图片是否存在
     //Use the image from the image cache if it exists
     UIImage *cachedImage = [imageCache imageforRequest:urlRequest withAdditionalIdentifier:nil];
     if (cachedImage) {
@@ -111,6 +114,7 @@
         }
 
         __weak __typeof(self)weakSelf = self;
+        //取一个随机的UUID作为标志
         NSUUID *downloadID = [NSUUID UUID];
         AFImageDownloadReceipt *receipt;
         //去下载，并得到一个receipt，可以用来取消回调
@@ -119,12 +123,14 @@
                    withReceiptID:downloadID
                    success:^(NSURLRequest * _Nonnull request, NSHTTPURLResponse * _Nullable response, UIImage * _Nonnull responseObject) {
                        __strong __typeof(weakSelf)strongSelf = weakSelf;
+            //检查当前的任务id和请求的任务id是否一致
                        if ([strongSelf.af_activeImageDownloadReceipt.receiptID isEqual:downloadID]) {
                            if (success) {
                                success(request, response, responseObject);
                            } else if (responseObject) {
                                strongSelf.image = responseObject;
                            }
+                           //清空任务信息
                            [strongSelf clearActiveDownloadInformation];
                        }
 

@@ -23,9 +23,9 @@
 #import <Security/Security.h>
 
 typedef NS_ENUM(NSUInteger, AFSSLPinningMode) {
-    AFSSLPinningModeNone,
-    AFSSLPinningModePublicKey,
-    AFSSLPinningModeCertificate,
+    AFSSLPinningModeNone,    //不验证
+    AFSSLPinningModePublicKey,    //只验证公钥
+    AFSSLPinningModeCertificate,    //验证证书
 };
 
 /**
@@ -54,6 +54,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 /**
  Whether or not to trust servers with an invalid or expired SSL certificates. Defaults to `NO`.
+ //是否允许自签名证书
  */
 @property (nonatomic, assign) BOOL allowInvalidCertificates;
 

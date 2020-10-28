@@ -50,21 +50,36 @@ typedef NS_ENUM(NSInteger, AFImageDownloadPrioritization) {
 @property (nonatomic, strong) NSUUID *receiptID;
 @end
 
-/** The `AFImageDownloader` class is responsible for downloading images in parallel on a prioritized queue. Incoming downloads are added to the front or back of the queue depending on the download prioritization. Each downloaded image is cached in the underlying `NSURLCache` as well as the in-memory image cache. By default, any download request with a cached image equivalent in the image cache will automatically be served the cached image representation.
+/**
+ AFImageDownloader是AF框架中提供的图片下载管理类。
+ 
+ The `AFImageDownloader` class is responsible for downloading images in parallel on a prioritized queue. Incoming downloads are added to the front or back of the queue depending on the download prioritization. Each downloaded image is cached in the underlying `NSURLCache` as well as the in-memory image cache. By default, any download request with a cached image equivalent in the image cache will automatically be served the cached image representation.
  */
 @interface AFImageDownloader : NSObject
 
 /**
+ //图片缓存器
+
  The image cache used to store all downloaded images in. `AFAutoPurgingImageCache` by default.
  */
 @property (nonatomic, strong, nullable) id <AFImageRequestCache> imageCache;
 
 /**
+ //请求会话管理类
+
  The `AFHTTPSessionManager` used to download images. By default, this is configured with an `AFImageResponseSerializer`, and a shared `NSURLCache` for all image downloads.
  */
 @property (nonatomic, strong) AFHTTPSessionManager *sessionManager;
 
 /**
+ //设置下载器属性
+ /*
+ 下载器可以设置同时下载图片的最大数量 如果超出数量的请求会被暂时挂起
+ typedef NS_ENUM(NSInteger, AFImageDownloadPrioritization) {
+     AFImageDownloadPrioritizationFIFO,//被挂起的请求遵守先挂起的先开始
+     AFImageDownloadPrioritizationLIFO//被挂起的请求遵守后挂起的先开始
+ };
+
  Defines the order prioritization of incoming download requests being inserted into the queue. `AFImageDownloadPrioritizationFIFO` by default.
  */
 @property (nonatomic, assign) AFImageDownloadPrioritization downloadPrioritization;
@@ -118,6 +133,8 @@ typedef NS_ENUM(NSInteger, AFImageDownloadPrioritization) {
                             imageCache:(nullable id <AFImageRequestCache>)imageCache;
 
 /**
+ //进行图片请求 随机生成uuid
+
  Creates a data task using the `sessionManager` instance for the specified URL request.
 
  If the same data task is already in the queue or currently being downloaded, the success and failure blocks are

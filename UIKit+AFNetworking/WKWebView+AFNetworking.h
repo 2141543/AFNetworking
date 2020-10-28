@@ -32,6 +32,9 @@ NS_ASSUME_NONNULL_BEGIN
 
 @class AFHTTPSessionManager;
 
+/*
+  这个类别是对WebView的一种扩展，其主要作用是将WebView的直接加载改为先下载本地数据，然后进行本地数据的加载，并可以提供一个进度。
+ */
 @interface WKWebView (AFNetworking)
 
 /**
@@ -55,6 +58,8 @@ NS_ASSUME_NONNULL_BEGIN
             failure:(nullable void (^)(NSError *error))failure;
 
 /**
+ //进行网页数据请求，完成后会将网页数据返回 并且自动的进行加载
+
  Asynchronously loads the data associated with a particular request with a specified MIME type and text encoding.
  
  @param request A URL request identifying the location of the content to load. This must not be `nil`.

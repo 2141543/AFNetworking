@@ -40,6 +40,8 @@ NS_ASSUME_NONNULL_BEGIN
 ///------------------------------------
 
 /**
+ 将上传任务绑定到进度条组件上
+ 
  Binds the progress to the upload progress of the specified session task.
 
  @param task The session task.
@@ -49,6 +51,8 @@ NS_ASSUME_NONNULL_BEGIN
                                    animated:(BOOL)animated;
 
 /**
+ 将下载任务绑定到进度条组件上
+ 
  Binds the progress to the download progress of the specified session task.
 
  @param task The session task.
